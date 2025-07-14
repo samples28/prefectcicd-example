@@ -4,7 +4,7 @@ from prefect.client.schemas.schedules import IntervalSchedule
 from datetime import timedelta        
 @task(log_prints=True)
 def get_stars_for_repo(repo: str) -> int:
-    response = httpx.Client().get(f"https://api.github.com/repos/langgenius/dify")
+    response = httpx.Client().get(f"https://api.github.com/repos/{repo}")
     stargazer_count = response.json()["stargazers_count"]
     print(f"{repo} has {stargazer_count} stars")
     return stargazer_count
@@ -18,7 +18,7 @@ def retrieve_github_stars(repos: list[str]) -> list[int]:
 if __name__ == "__main__":
     retrieve_github_stars.serve(
         parameters={
-            "repos": ["python/cpython", "prefectHQ/prefect"],
+            "repos": ["python/cpython", "prefectHQ/prefect","langgenius/dify"],
         },
-        schedule=IntervalSchedule(interval=timedelta(minutes=5))    
+        schedule=IntervalSchedule(interval=timedelta(minutes=8))    
     )
