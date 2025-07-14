@@ -1,2 +1,2 @@
-# prefecicd-example 2222222
+# prefecicd-example 22222222
 An example repository fupon which the fect docs CI/CD guide is based 2
