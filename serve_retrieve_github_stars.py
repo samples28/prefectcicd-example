@@ -20,5 +20,5 @@ if __name__ == "__main__":
         parameters={
             "repos": ["python/cpython", "prefectHQ/prefect","langgenius/dify"],
         },
-        schedule=IntervalSchedule(interval=timedelta(minutes=8))    
+        schedule=IntervalSchedule(interval=timedelta(minutes=10))    
     )
