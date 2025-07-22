@@ -1,17 +1,26 @@
-# Use an official Python runtime as the base image
-FROM registry.cn-beijing.aliyuncs.com/moseeker/python:3.12-slim
+FROM python:3.12-slim
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Install the required packages
-RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com  -r requirements.txt
+COPY . .
 
-# Copy the rest of the application code
-COPY serve_retrieve_github_stars.py .
+ENV PYTHONUNBUFFERED=1 \
+    PREFECT_LOGGING_LEVEL=INFO
 
-# Set the command to run your application
-CMD ["python", "serve_retrieve_github_stars.py"]
+ARG PREFECT_API_URL
+ARG IMAGE_REPO
+ARG IMAGE_TAG
+ARG WORK_POOL_NAME=my-docker-pool
+
+ENV PREFECT_API_URL=${PREFECT_API_URL} \
+    IMAGE_REPO=${IMAGE_REPO} \
+    IMAGE_TAG=${IMAGE_TAG} \
+    WORK_POOL_NAME=${WORK_POOL_NAME}
+
+CMD ["python", "flow.py"]
