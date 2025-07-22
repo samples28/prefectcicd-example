@@ -1,2 +1,1 @@
-prefect
-prefect-docker
+PyYAML==6.0.2
