@@ -1,2 +1,2 @@
 prefect
-redis
+prefect-docker
