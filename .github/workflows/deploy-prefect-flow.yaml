@@ -1,28 +1,68 @@
-name: Deploy Prefect flow
+name: CI & Deploy Prefect Flow
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy:
-    name: Deploy
-    runs-on: self-hosted
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest # Use a standard GitHub-hosted runner for testing
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip' # Cache dependencies to speed up future runs
 
-    
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
 
-      - name: Prefect Deploy
+      - name: Lint with ruff
+        run: ruff check .
+
+      - name: Run tests with pytest
+        run: pytest
+
+  deploy:
+    name: Deploy Flow to Self-Hosted Runner
+    runs-on: self-hosted
+    needs: lint-and-test # Ensure tests pass before deploying
+    if: github.ref == 'refs/heads/main' # Only deploy pushes to the main branch
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Prefect Flow
         env:
-          
+          # These secrets must be set in your GitHub repository settings
           PREFECT_API_URL: ${{ secrets.PREFECT_API_URL }}
-        run: |
-          docker build -t demo-flow:v1 .
-          docker run -d --env-file .env demo-flow:v1
+          PREFECT_API_KEY: ${{ secrets.PREFECT_API_KEY }}
 
+          # Variables for Docker image and container management
+          IMAGE_TAG: prefect-demo-flow:${{ github.sha }}
+          CONTAINER_NAME: prefect-demo-flow
+        run: |
+          # Build the new Docker image with a unique tag based on the Git commit SHA
+          docker build -t $IMAGE_TAG .
+
+          # Stop and remove the old container if it's running, ignoring errors if it doesn't exist
+          docker stop $CONTAINER_NAME || true
+          docker rm $CONTAINER_NAME || true
+
+          # Run the new container with the specified environment variables
+          # --restart always ensures the container restarts if the server reboots
+          docker run -d --restart always \
+            -e PREFECT_API_URL=$PREFECT_API_URL \
+            -e PREFECT_API_KEY=$PREFECT_API_KEY \
+            --name $CONTAINER_NAME \
+            $IMAGE_TAG
